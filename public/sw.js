@@ -1,7 +1,11 @@
 /**
  * Created by saikham on 5/12/18.
  */
-const CACHE_STATIC = 'static-v17'
+
+importScripts('/src/js/idb.js')
+importScripts('/src/js/utility.js')
+
+const CACHE_STATIC = 'static-v20'
 const CACHE_DYNAMIC = 'dynamic-v2'
 var STATIC_FILES = [
     '/',
@@ -9,6 +13,7 @@ var STATIC_FILES = [
     '/offline.html',
     '/src/js/app.js',
     '/src/js/feed.js',
+    '/src/js/idb.js',
     '/src/js/promise.js',
     '/src/js/fetch.js',
     '/src/js/material.min.js',
@@ -19,6 +24,7 @@ var STATIC_FILES = [
     'https://fonts.googleapis.com/icon?family=Material+Icons',
     'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
 ]
+
 
 // function trimCache(cacheName, maxItem) {
 //     caches.open(cacheName)
@@ -63,18 +69,23 @@ self.addEventListener('activate', function (event) {
 
 
 self.addEventListener('fetch', function (event) {
-    var url = 'https://httpbin.org/get';
+    var url = 'https://pwagram-805d5.firebaseio.com/posts';
 
     if (event.request.url.indexOf(url) > -1) {
         event.respondWith(
-            caches.open(CACHE_DYNAMIC)
-                .then(function (cache) {
-                    return fetch(event.request)
-                        .then(function (res) {
-                            // trimCache(CACHE_DYNAMIC, 3)
-                            cache.put(event.request.url, res.clone())
-                            return res
+            fetch(event.request)
+                .then(function (res) {
+                    var cloneRes = res.clone()
+                    clearData('posts')
+                        .then(function () {
+                            return cloneRes.json()
                         })
+                        .then(function(data){
+                            for (var key in data) {
+                                writeData('posts', data[key])
+                            }
+                        })
+                    return res
                 })
         )
     }
